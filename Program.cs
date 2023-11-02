@@ -12,7 +12,7 @@ namespace MainCharacterGenderPatcher
     class Program
     {
         static AssetsManager am = new AssetsManager();
-        static string[] genderedWords = new string[10];
+        static string[] genderedWords = new string[10]; // All combinations included in script
         static AssetTypeValueField script;
 
         [STAThread]
@@ -20,14 +20,16 @@ namespace MainCharacterGenderPatcher
         {
             DecompileCYFile();
 
+            // Load English language file to memory
             var assetInst = am.LoadAssetsFileFromBundle(am.LoadBundleFile("langen-us.unity3d", true), 0, true);
             var scriptContainer = am.GetBaseField(assetInst, assetInst.file.GetAssetsOfType(AssetClassID.MonoBehaviour)[0]);
-            script = scriptContainer["linesdict"];
 
-            SelectPronouns();
-            ReplacePronouns();
-            CompileUnity3DFile(ref assetInst, ref scriptContainer);
-            Cleanup();
+            script = scriptContainer["linesdict"]; // Get DDLC dialogue lines
+
+            SelectPronouns(); // Ask user for their desired pronouns
+            ReplacePronouns(); // Go through each 32 lines of gendered dialogue and replace it
+            CompileUnity3DFile(ref assetInst, ref scriptContainer); // Compile and encode Unity3D file and export to CY file
+            Cleanup(); // Delete temporary files
 
             Console.Clear();
             Console.WriteLine(Messages.PATCH_COMPLETED);
@@ -36,6 +38,7 @@ namespace MainCharacterGenderPatcher
 
         static void DecompileCYFile()
         {
+            // Get user to select their unmodified langen-us.cy file from the DDLC+ StreamingAssets folder
             Console.WriteLine(Messages.FILE_SELECT);
             OpenFileDialog f = new OpenFileDialog() { Filter = "CY file|*.cy", Title = "Select DDLC+ English language file" };
             if (f.ShowDialog() == DialogResult.Cancel)
@@ -47,7 +50,7 @@ namespace MainCharacterGenderPatcher
             }
 
             byte[] cyd;
-
+            // SHA256 hash comparison (clean asset hash)
             if (!CompareHash(f.FileName, out cyd))
             {
                 Console.Clear();
@@ -56,11 +59,12 @@ namespace MainCharacterGenderPatcher
                 Environment.Exit(0);
             }
 
-            for (var i = 0; i < cyd.Length; i++)
+            for (var i = 0; i < cyd.Length; i++) // Decrypt CY file
             {
                 cyd[i] ^= 0x28;
             }
 
+            // Create a decompiled version of the CY file temporarily
             using (var u3d = new BinaryWriter(File.Open("langen-us.unity3d", FileMode.Create)))
                 u3d.Write(cyd);
         }
@@ -79,6 +83,7 @@ namespace MainCharacterGenderPatcher
                 case 2:
                     Console.WriteLine(Messages.CUSTOM_PRONOUN);
                     string[] originalGenderedWords = new string[10] { "he", "he's", "he'd", "he'll", "him", "his", "boy", "guy", "boyfriend", "gentleman" };
+                    // Ask user to manually change each version of the pronoun they desire
                     for (var i = 0; i < originalGenderedWords.Length; i++)
                     {
                         Console.Write($"Replacement for {originalGenderedWords[i]}: ");
@@ -90,6 +95,7 @@ namespace MainCharacterGenderPatcher
 
         static void ReplacePronouns()
         {
+            // Each line has been given specific replacement
             for (var i = 0; i < genderedDialogue.Count; i++)
             {
                 var words = GetDialogueValue(script, genderedDialogue[i].sceneIndex, genderedDialogue[i].dialogueIndex).Split(' ');
@@ -149,14 +155,17 @@ namespace MainCharacterGenderPatcher
                 else if (i == 31)
                     words[0] = $"<i>({CapitaliseWord(genderedWords[1])}";
 
+                // Set the replaced line to the script variable
                 SetDialogueValue(script, genderedDialogue[i].sceneIndex, genderedDialogue[i].dialogueIndex, string.Join(" ", words));
             }
         }
 
         static void CompileUnity3DFile(ref AssetsFileInstance assetInst, ref AssetTypeValueField scriptContainer)
         {
+            // Push changes to script's container
             assetInst.file.GetAssetsOfType(AssetClassID.MonoBehaviour)[0].SetNewData(scriptContainer);
 
+            // Write changes to another temporary file
             using (AssetsFileWriter w = new AssetsFileWriter("langen-us.patched.unity3d"))
             {
                 assetInst.file.Write(w);
@@ -164,6 +173,7 @@ namespace MainCharacterGenderPatcher
 
             byte[] data;
 
+            // Read the new temp file
             using (var s = new FileStream("langen-us.patched.unity3d", FileMode.Open))
             {
                 var len = (int)s.Length;
@@ -171,18 +181,20 @@ namespace MainCharacterGenderPatcher
                 s.Read(data, 0, len);
             }
 
+            // Re-encrypt the data
             for (var i = 0; i < data.Length; i++)
             {
                 data[i] ^= 0x28;
             }
 
+            // Write encrypted data to the final output file
             using (var cy = new BinaryWriter(File.Open("langen-us.patched.cy", FileMode.Create)))
                 cy.Write(data);
         }
 
         static void Cleanup()
         {
-            am.UnloadAll();
+            am.UnloadAll(); // Unload langen-us.unity3d
             File.Delete("langen-us.unity3d");
             File.Delete("langen-us.patched.unity3d");
         }

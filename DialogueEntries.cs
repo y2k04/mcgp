@@ -4,6 +4,7 @@ namespace MainCharacterGenderPatcher
 {
     public static class DialogueEntries
     {
+        // All of the entries that contain words that reference the main character's gender
         public static List<Dialogue> genderedDialogue = new List<Dialogue>()
         {
             new Dialogue(10, 91), // ch0_main

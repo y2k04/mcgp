@@ -11,10 +11,10 @@ namespace MainCharacterGenderPatcher
             selectedIndex = 0;
             while (true)
             {
-                Console.WriteLine($"{question}{Environment.NewLine}");
+                Console.WriteLine($"{question}\n(Use UP/DOWN arrow keys to change selection and ENTER to select)\n");
                 for (var i = 0; i < choices.Length; i++)
                 {
-                    if (i == selectedIndex)
+                    if (i == selectedIndex) // Highlight the selection
                     {
                         Console.BackgroundColor = ConsoleColor.White;
                         Console.ForegroundColor = ConsoleColor.Black;
@@ -24,6 +24,9 @@ namespace MainCharacterGenderPatcher
                         Console.WriteLine(choices[i]);
                 }
 
+                // Get the key that was pressed, and
+                // change the selection if the index is not equal to
+                // the first entry or the last
                 var key = Console.ReadKey(true).Key;
                 if (key == ConsoleKey.DownArrow && selectedIndex <= 1)
                     selectedIndex++;
