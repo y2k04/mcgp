@@ -1,6 +1,11 @@
 # mcgp
 DDLC+ Main Character Gender Patcher
 
+## Available genders
+- Female
+- Non-binary
+- Custom (Add your own!)
+
 ## How to use
 1. Download the [latest release](https://github.com/y2k04/mcgp/releases/latest) and extract it.
 2. Run MainCharacterGenderPatcher.exe
